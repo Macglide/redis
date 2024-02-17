@@ -70,6 +70,8 @@ management:
   health:
     mail:
       enabled: false # When using the MailService, configure an SMTP server and set this to true
+    redis:
+      enabled: false
   prometheus:
     metrics:
       export:
@@ -124,6 +126,11 @@ spring:
     jpa:
       repositories:
         bootstrap-mode: deferred
+    redis:
+      repositories:
+        enabled: false
+  #      host: localhost
+  #      port: 6379
   jpa:
     open-in-view: false
     properties:

@@ -1,6 +1,7 @@
 package za.co.macglide.redis;
 
 import jakarta.annotation.PostConstruct;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import tech.jhipster.config.DefaultProfileUtil;
 import tech.jhipster.config.JHipsterConstants;
 import za.co.macglide.redis.config.ApplicationProperties;
 import za.co.macglide.redis.config.CRLFLogConverter;
+import za.co.macglide.redis.web.rest.RedisServer;
 
 @SpringBootApplication
 @EnableConfigurationProperties({ LiquibaseProperties.class, ApplicationProperties.class })
@@ -64,11 +66,13 @@ public class RedisApp {
      *
      * @param args the command line arguments.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         SpringApplication app = new SpringApplication(RedisApp.class);
         DefaultProfileUtil.addDefaultProfile(app);
         Environment env = app.run(args).getEnvironment();
+        RedisServer redisServer = new RedisServer();
         logApplicationStartup(env);
+        redisServer.start();
     }
 
     private static void logApplicationStartup(Environment env) {
