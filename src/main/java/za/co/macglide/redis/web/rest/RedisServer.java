@@ -1,48 +1,32 @@
 package za.co.macglide.redis.web.rest;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import za.co.macglide.redis.service.ClientHandler;
 
 @Slf4j
 @Component
 public class RedisServer {
 
     public void start() throws IOException {
-        // Here, we create a Socket instance named socket
+        int PORT = 6379;
 
-        try {
-            int PORT = 6380;
-            ServerSocket serverSocket = new ServerSocket(PORT);
+        // Create a server socket
+        ServerSocket serverSocket = new ServerSocket(PORT);
+
+        try (serverSocket) {
             log.info("Listening for clients on Port {} ...", PORT);
-            Socket clientSocket = serverSocket.accept();
 
-            // takes input from the client socket
-            DataInputStream in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
-
-            String line = "";
-
-            while (!line.equals("Over")) {
-                try {
-                    line = in.readUTF();
-                    log.info(line);
-                } catch (IOException i) {
-                    log.error("Could not read from the socket", i);
-                }
+            while (true) {
+                //accept a new connectiong
+                Socket clientSocket = serverSocket.accept();
+                log.info("Client with IP {} successfully connected", clientSocket.getInetAddress());
+                // Create a thread to handle the client connection
+                new Thread(new ClientHandler(clientSocket)).start();
             }
-            System.out.println("Closing connection");
-
-            // close connection
-            clientSocket.close();
-            in.close();
-
-            String clientSocketIP = clientSocket.getInetAddress().toString();
-            int clientSocketPort = clientSocket.getPort();
-            log.info("[IP: {}  ,Port: {}. Client Connection Successful!", clientSocketIP, clientSocketPort);
         } catch (IOException ioException) {
             log.error("There was an error attempting to connect to us", ioException);
         }
