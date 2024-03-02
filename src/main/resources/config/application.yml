@@ -176,6 +176,9 @@ spring:
   output:
     ansi:
       console-available: true
+  threads:
+    virtual:
+      enabled: true
 
 server:
   servlet:
