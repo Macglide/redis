@@ -14,10 +14,7 @@ public class RedisServer {
     public void start() throws IOException {
         int PORT = 6379;
 
-        // Create a server socket
-        ServerSocket serverSocket = new ServerSocket(PORT);
-
-        try (serverSocket) {
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             log.info("Listening for clients on Port {} ...", PORT);
 
             while (true) {
