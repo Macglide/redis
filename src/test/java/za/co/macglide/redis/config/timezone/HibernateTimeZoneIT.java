@@ -20,7 +20,6 @@ import za.co.macglide.redis.repository.timezone.DateTimeWrapperRepository;
  * Integration tests for verifying the behavior of Hibernate in the context of storing various date and time types across different databases.
  * The tests focus on ensuring that the stored values are correctly transformed and stored according to the configured timezone.
  * Timezone is environment specific, and can be adjusted according to your needs.
- *
  * For more context, refer to:
  * - GitHub Issue: https://github.com/jhipster/generator-jhipster/issues/22579
  * - Pull Request: https://github.com/jhipster/generator-jhipster/pull/22946
