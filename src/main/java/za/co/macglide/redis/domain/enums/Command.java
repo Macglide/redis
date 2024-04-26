@@ -5,5 +5,6 @@ public enum Command {
     ECHO,
     SET,
     GET,
+    EXISTS,
     UNKNOWN,
 }

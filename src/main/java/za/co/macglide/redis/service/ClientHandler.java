@@ -4,7 +4,9 @@ import static za.co.macglide.redis.config.Constants.ARRAY_BYTE;
 import static za.co.macglide.redis.config.Constants.CARRIAGE_RETURN_LINE_FEED;
 import static za.co.macglide.redis.config.Constants.ECHO;
 import static za.co.macglide.redis.config.Constants.ECHO_COMMAND;
+import static za.co.macglide.redis.config.Constants.EXISTS;
 import static za.co.macglide.redis.config.Constants.GET;
+import static za.co.macglide.redis.config.Constants.NIL;
 import static za.co.macglide.redis.config.Constants.OK;
 import static za.co.macglide.redis.config.Constants.PING;
 import static za.co.macglide.redis.config.Constants.PONG;
@@ -55,19 +57,17 @@ public class ClientHandler implements Runnable {
             var requestArray = redisBulkString.split(Constants.CARRIAGE_RETURN_LINE_FEED);
             var command = parseCommand(requestArray[2]);
             log.info("command {}", command);
+            log.info("string received {}", redisBulkString);
 
             switch (Objects.requireNonNull(command)) {
                 case PING -> writeToSocket(PONG);
-                case ECHO -> {
-                    String responseToEcho = handleEcho(redisBulkString);
-                    writeToSocket(responseToEcho);
-                }
+                case ECHO -> handleEcho(redisBulkString);
                 case SET -> handleSet(requestArray);
                 case GET -> {
                     var key = requestArray[4];
-                    String response = handleGet(key);
-                    writeToSocket(response);
+                    handleGet(key);
                 }
+                case EXISTS -> handleExist(requestArray);
                 default -> log.warn("Client send unknown command {}", redisBulkString);
             }
         } catch (IOException e) {
@@ -75,6 +75,16 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * Handles the SET command request.
+     * This method is responsible for setting a key-value pair in the cache.
+     * If the request also contains an expiry option and time, these are also set for the key.
+     *
+     * @param requestArray The request received from the client, split into an array.
+     *                     The key is expected to be at index 4, the value at index 5.
+     *                     If present, the expiry option is expected at index 8 and the expiry time at index 10.
+     * @throws IOException If an I/O error occurs when writing to the socket.
+     */
     private void handleSet(String[] requestArray) throws IOException {
         //assumption: a unique key is mapped to one single (non-nested) value
 
@@ -92,7 +102,7 @@ public class ClientHandler implements Runnable {
         }
         writeToSocket(OK);
         cache.set(key, valueDTO);
-        //log.info("Key {} Value: {} saved to cache", key, cache.get(key));
+        log.debug("Key {} Value: {} saved to cache", key, valueDTO.getValue());
     }
 
     private Command parseCommand(String command) {
@@ -110,12 +120,23 @@ public class ClientHandler implements Runnable {
             case GET -> {
                 return Command.GET;
             }
+            case EXISTS -> {
+                return Command.EXISTS;
+            }
             default -> {
                 return Command.UNKNOWN;
             }
         }
     }
 
+    /**
+     * Reads data from the client socket.
+     * This method is responsible for reading the incoming request from the client.
+     * It reads the data as bytes and then converts it to a String using the UTF-8 charset.
+     *
+     * @return The request received from the client as a String.
+     * @throws IOException If an I/O error occurs when reading from the socket.
+     */
     private String readFromSocket() throws IOException {
         // Read message from client
         byte[] redisArrayInBytes = new byte[1024];
@@ -129,17 +150,29 @@ public class ClientHandler implements Runnable {
         return new String(redisArrayInBytes, charset).trim();
     }
 
+    /**
+     * Writes a response to the client socket.
+     * This method is responsible for sending a response back to the client.
+     * It converts the response to bytes using the UTF-8 charset and then writes these bytes to the socket's output stream.
+     *
+     * @param response The response to be sent to the client as a String.
+     * @throws IOException If an I/O error occurs when writing to the socket.
+     */
     private void writeToSocket(String response) throws IOException {
         clientSocket.getOutputStream().write(response.getBytes(charset));
         log.info("Server responded {}", response);
     }
 
     /**
-     * Handles ECHO command request
-     * @param request message converted from bytes to String from redis client
+     * Handles the ECHO command request.
+     * This method is responsible for echoing back the message received from the client.
+     * The ECHO command is removed from the message before it is sent back to the client.
+     *
+     * @param request The request received from the client as a String.
+     * @throws IOException If an I/O error occurs when writing to the socket.
      */
-    private String handleEcho(String request) {
-        log.info("Client sent: {}", request);
+    private void handleEcho(String request) throws IOException {
+        log.debug("Client sent: {}", request);
         StringBuilder responseBuilder = new StringBuilder();
         StringBuilder bulkStringBuilder = new StringBuilder(request);
 
@@ -157,15 +190,33 @@ public class ClientHandler implements Runnable {
         responseBuilder.append(bulkStringWithoutEchoCommand);
         responseBuilder.append(CARRIAGE_RETURN_LINE_FEED);
 
-        return responseBuilder.toString();
+        writeToSocket(responseBuilder.toString());
     }
 
-    private String handleGet(String key) {
+    private void handleGet(String key) throws IOException {
         //get the key from cache
         log.info("key {}", key);
         var valueDTO = (ValueDTO) cache.get(key);
+        String response = valueDTO != null ? valueDTO.getValue() : NIL;
+        writeToSocket(response);
+    }
 
-        return valueDTO.getValue();
+    /**
+     * Handles the ECHO command request.
+     * This method is responsible for echoing back the message received from the client.
+     * The ECHO command is removed from the message before it is sent back to the client.
+     *
+     * @param request The request received from the client as a String.
+     * @throws IOException If an I/O error occurs when writing to the socket.
+     */
+    private void handleExist(String[] request) throws IOException {
+        int count = 0;
+        for (int i = 4; i < request.length; i += 2) {
+            if (cache.keysExist(request[i])) {
+                count++;
+            }
+        }
+        writeToSocket(String.format(":%d\r\n", count));
     }
 
     private int getArrayLength(String request) {

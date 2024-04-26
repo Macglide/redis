@@ -1,5 +1,7 @@
 package za.co.macglide.redis.service;
 
+import static za.co.macglide.redis.config.Constants.NIL;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -13,12 +15,6 @@ public class LRUCache<K, V> {
     private final int capacity;
     private final ConcurrentHashMap<K, Node<V>> map;
     private final DoublyLinkedList<V> list;
-    private static final String NIL =
-        """
-        *1\r
-        $5\r
-        (nil)\r
-        """;
 
     public LRUCache(int capacity) {
         this.capacity = capacity;
@@ -77,6 +73,10 @@ public class LRUCache<K, V> {
                 removeLeastRecentlyUsed();
             }
         }
+    }
+
+    public boolean keysExist(K key) {
+        return map.containsKey(key);
     }
 
     private void removeLeastRecentlyUsed() {

@@ -168,6 +168,62 @@ public class ClientHandlerTest {
         assertEquals("", getSocketOutput());
     }
 
+    @Test
+    public void shouldReturnNILWhenKeyDoesNotExists() throws IOException {
+        String getRequest = "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n";
+
+        setupMockSocket(getRequest);
+
+        clientHandler.run();
+
+        assertEquals("*1\r\n$5\r\n(nil)\r\n", getSocketOutput());
+    }
+
+    @Test
+    public void shouldReturnCountOfExistingKeys() throws IOException {
+        String setRequest1 = "*3\r\n$3\r\nSET\r\n$3\r\nkey1\r\n$5\r\nvalue1\r\n";
+        String setRequest2 = "*3\r\n$3\r\nSET\r\n$3\r\nkey2\r\n$5\r\nvalue2\r\n";
+        String existsRequest = "*3\r\n$6\r\nEXISTS\r\n$4\r\nkey1\r\n$4\r\nkey2\r\n";
+        setupMockSocket(setRequest1);
+
+        clientHandler.run();
+
+        setupMockSocket(setRequest2);
+
+        clientHandler.run();
+
+        setupMockSocket(existsRequest);
+
+        clientHandler.run();
+
+        assertEquals(":2\r\n", getSocketOutput());
+    }
+
+    @Test
+    public void shouldReturnZeroWhenNoKeysExist() throws IOException {
+        String existsRequest = "*3\r\n$6\r\nEXISTS\r\n$4\r\nkey1\r\n$4\r\nkey2\r\n";
+        setupMockSocket(existsRequest);
+
+        clientHandler.run();
+
+        assertEquals(":0\r\n", getSocketOutput());
+    }
+
+    @Test
+    public void shouldReturnCountOfExistingKeysIgnoringNonExisting() throws IOException {
+        String setRequest = "*3\r\n$3\r\nSET\r\n$3\r\nkey1\r\n$5\r\nvalue1\r\n";
+        String existsRequest = "*3\r\n$6\r\nEXISTS\r\n$4\r\nkey1\r\n$4\r\nkey2\r\n";
+        setupMockSocket(setRequest);
+
+        clientHandler.run();
+
+        setupMockSocket(existsRequest);
+
+        clientHandler.run();
+
+        assertEquals(":1\r\n", getSocketOutput());
+    }
+
     private void setupMockSocket(String input) throws IOException {
         when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
         when(mockSocket.getOutputStream()).thenReturn(new ByteArrayOutputStream());

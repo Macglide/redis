@@ -28,8 +28,17 @@ public final class Constants {
         """
         +OK\r
         """;
+    public static final String NIL =
+        """
+        *1\r
+        $5\r
+        (nil)\r
+        """;
+    public static final String ZERO = ":0\r\n";
+    public static final String ONE = ":1\r\n";
     public static final String SET = "SET";
     public static final String GET = "GET";
+    public static final String EXISTS = "EXISTS";
     public static final char ARRAY_BYTE = '*';
 
     private Constants() {}
