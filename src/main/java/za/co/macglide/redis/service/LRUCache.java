@@ -153,35 +153,5 @@ public class LRUCache<K, V> {
         private boolean isEmpty() {
             return head == null;
         }
-
-        private void removeNode(Node<V> node) {
-            //DLL [1] <-> [2] <-> [3]
-            //I want to remove [1] , i.e. head
-            // <-> [2] <-> [3]
-            //I want to remove [3] , i.e. tail
-            // [1] <-> [2] <->
-            //I want to remove [3] , i.e. tail
-            // [1] <->  <-> [3]
-
-            if (isEmpty()) {
-                throw new IllegalStateException("List is empty");
-            }
-
-            //if you have one node in the DLL, make it null.
-            if (head == tail) {
-                head = tail = null;
-                //deletion of head
-            } else if (node == head) {
-                head = head.next;
-                head.prev = null;
-                //handle tail deletion
-            } else if (node == tail) {
-                tail.prev = tail;
-                tail.prev.next = null;
-            } else {
-                node.prev.next = node.next;
-                node.next.prev = node.prev;
-            }
-        }
     }
 }
